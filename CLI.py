@@ -1,7 +1,6 @@
 import argparse
 import sys
 
-# File
 
 def parse_arguments():
     """Парсинг аргументов командной строки"""
