@@ -1,0 +1,6 @@
+A B C TEST
+B D EXAM
+C D E
+D TEST
+E F
+F EXAM
