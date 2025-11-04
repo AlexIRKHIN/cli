@@ -54,6 +54,12 @@ def parse_arguments():
         help='Подстрока для фильтрации пакетов'
     )
 
+    parser.add_argument(
+        '--show-order',
+        action='store_true',
+        help='Показать порядок загрузки зависимостей'
+    )
+
     return parser.parse_args()
 
 
@@ -195,6 +201,57 @@ def build_dependency_graph(args):
     return graph
 
 
+def calculate_load_order(graph, root_package):
+    """
+    Вычисляет порядок загрузки зависимостей с помощью топологической сортировки
+    """
+    # Строим обратный граф для вычисления зависимостей
+    reverse_graph = {}
+    for package, deps in graph.items():
+        for dep in deps:
+            if dep not in reverse_graph:
+                reverse_graph[dep] = []
+            reverse_graph[dep].append(package)
+
+        if package not in reverse_graph:
+            reverse_graph[package] = []
+
+    # Топологическая сортировка с использованием DFS
+    visited = set()
+    temp_visited = set()
+    order = []
+    has_cycle = False
+
+    def visit(node):
+        nonlocal has_cycle
+        if node in temp_visited:
+            has_cycle = True
+            return
+        if node in visited:
+            return
+
+        temp_visited.add(node)
+
+        # Посещаем все зависимости
+        for neighbor in graph.get(node, []):
+            if neighbor in reverse_graph:  # Убедимся, что neighbor есть в графе
+                visit(neighbor)
+
+        temp_visited.remove(node)
+        visited.add(node)
+        order.append(node)
+
+    # Начинаем с корневого пакета
+    visit(root_package)
+
+    # Добавляем оставшиеся узлы
+    for node in graph:
+        if node not in visited:
+            visit(node)
+
+    return order, has_cycle
+
+
 def analyze_package(args):
     """
     Основная функция анализа пакета
@@ -219,6 +276,18 @@ def analyze_package(args):
     print(f"Всего пакетов: {total_packages}")
     print(f"Всего зависимостей: {total_dependencies}")
 
+    # Этап 4: Порядок загрузки зависимостей
+    if args.show_order:
+        print(f"\n=== РЕЖИМ ВЫВОДА ПОРЯДКА ЗАГРУЗКИ ===")
+        load_order, has_cycle = calculate_load_order(graph, args.package)
+
+        if has_cycle:
+            print("Обнаружены циклические зависимости! Порядок загрузки может быть некорректным.")
+
+        print("Порядок загрузки зависимостей:")
+        for i, package in enumerate(load_order, 1):
+            print(f"{i}. {package}")
+
 
 def main():
     """Основная функция"""
@@ -241,8 +310,9 @@ def main():
         print(f"  Версия: {args.version}")
         print(f"  Максимальная глубина: {args.max_depth}")
         print(f"  Фильтр: {args.filter}")
+        print(f"  Показать порядок загрузки: {args.show_order}")
 
-        # Этап 2 и 3: Получение зависимостей и построение графа
+        # Этапы 2, 3 и 4: Получение зависимостей, построение графа и дополнительные операции
         analyze_package(args)
 
     except Exception as e:
