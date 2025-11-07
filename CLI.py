@@ -60,6 +60,12 @@ def parse_arguments():
         help='Показать порядок загрузки зависимостей'
     )
 
+    parser.add_argument(
+        '--visualize',
+        action='store_true',
+        help='Визуализировать граф зависимостей в формате PlantUML'
+    )
+
     return parser.parse_args()
 
 
@@ -252,6 +258,22 @@ def calculate_load_order(graph, root_package):
     return order, has_cycle
 
 
+def generate_plantuml(graph, root_package):
+    """
+    Генерирует описание графа на языке PlantUML
+    """
+    plantuml_code = ["@startuml", f"title Граф зависимостей для {root_package}"]
+
+    # Добавляем все узлы и связи
+    for package, dependencies in graph.items():
+        for dep in dependencies:
+            plantuml_code.append(f'"{package}" --> "{dep}"')
+
+    plantuml_code.append("@enduml")
+
+    return "\n".join(plantuml_code)
+
+
 def analyze_package(args):
     """
     Основная функция анализа пакета
@@ -289,6 +311,15 @@ def analyze_package(args):
             print(f"{i}. {package}")
 
 
+    # Этап 5: Визуализация графа зависимостей
+    if args.visualize:
+        print(f"\n=== ВИЗУАЛИЗАЦИЯ ГРАФА ЗАВИСИМОСТЕЙ ===")
+        plantuml_code = generate_plantuml(graph, args.package)
+        print("Код PlantUML для визуализации графа:")
+        print("=" * 50)
+        print(plantuml_code)
+        print("=" * 50)
+
 def main():
     """Основная функция"""
     try:
@@ -311,8 +342,9 @@ def main():
         print(f"  Максимальная глубина: {args.max_depth}")
         print(f"  Фильтр: {args.filter}")
         print(f"  Показать порядок загрузки: {args.show_order}")
+        print(f"  Визуализация: {args.visualize}")
 
-        # Этапы 2, 3 и 4: Получение зависимостей, построение графа и дополнительные операции
+        # Этапы 2, 3, 4 и 5: Получение зависимостей, построение графа и дополнительные операции
         analyze_package(args)
 
     except Exception as e:

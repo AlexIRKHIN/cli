@@ -1,6 +1,6 @@
 @echo off
 echo ===== ТЕСТ 1: Корректные параметры =====
-python CLI.py --package "commons-lang" --repo "https://repo.maven.apache.org/maven2" --version "3.12.0" --max-depth 2 --filter "test"
+python CLI.py --package "commons-lang:commons-lang" --repo "https://repo1.maven.org/maven2" --version "2.6" --max-depth 2 --filter "test"
 echo.
 pause
 
